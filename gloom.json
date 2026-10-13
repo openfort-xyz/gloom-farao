@@ -1,0 +1,13 @@
+{
+  "id": "farao",
+  "name": "Farao",
+  "tagline": "Read-only Hyperliquid position sync from your Farao account",
+  "description": "Sync your Farao account (Hyperliquid perps, including HIP-3 stocks and commodities) over the Orus MCP server. Signs in with OAuth in your browser and approves in the Farao app, asks only for read scopes, and refuses to run if a tool it calls is not marked read-only. No order placement.",
+  "categories": ["broker"],
+  "targets": ["cli", "tui", "desktop"],
+  "hosts": ["orus.getfarao.com"],
+  "contributes": {
+    "broker": true
+  },
+  "minGloom": "0.12.0"
+}
