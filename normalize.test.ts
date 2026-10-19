@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { requireReadOnlyTools } from "./native";
+import { browserCommand, requireReadOnlyTools } from "./native";
 import { gloomListing, type OrusPortfolio, type OrusPosition, toSnapshot } from "./normalize";
 
 const ADDRESS = "0x1111111111111111111111111111111111111111";
@@ -120,5 +120,22 @@ describe("requireReadOnlyTools", () => {
   test("refuses a tool without the read-only annotation", () => {
     const unmarked = tools.map((tool) => (tool.name === "get_positions" ? { name: tool.name } : tool));
     expect(() => requireReadOnlyTools(unmarked)).toThrow("get_positions");
+  });
+});
+
+describe("browserCommand", () => {
+  const url = new URL("https://orus.getfarao.com/authorize?response_type=code&client_id=a|b&state=c");
+
+  test("Windows passes the whole URL to rundll32, never through cmd", () => {
+    expect(browserCommand(url, "win32")).toEqual(["rundll32", "url.dll,FileProtocolHandler", url.toString()]);
+  });
+
+  test("macOS and Linux use open and xdg-open", () => {
+    expect(browserCommand(url, "darwin")[0]).toBe("open");
+    expect(browserCommand(url, "linux")[0]).toBe("xdg-open");
+  });
+
+  test("refuses anything but http(s)", () => {
+    expect(() => browserCommand(new URL("file:///etc/passwd"), "darwin")).toThrow("file:");
   });
 });
