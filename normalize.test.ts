@@ -17,6 +17,7 @@ const portfolio: OrusPortfolio = {
 function position(overrides: Partial<OrusPosition>): OrusPosition {
   return {
     coin: "BTC",
+    assetClass: "crypto",
     side: "long",
     size: "0.01",
     entryPrice: "100000",
@@ -28,23 +29,25 @@ function position(overrides: Partial<OrusPosition>): OrusPosition {
 }
 
 describe("gloomListing", () => {
-  test("main-DEX crypto joins the coin's USD pair", () => {
-    expect(gloomListing("BTC")).toEqual({ ticker: "BTC-USD", exchange: "CCC", assetCategory: "CRYPTO" });
+  test("crypto joins the coin's USD pair, HIP-3 prefix dropped", () => {
+    expect(gloomListing({ coin: "BTC", assetClass: "crypto" })).toEqual({ ticker: "BTC-USD", exchange: "CCC", assetCategory: "CRYPTO" });
+    expect(gloomListing({ coin: "flx:BTC", assetClass: "crypto" }).ticker).toBe("BTC-USD");
   });
 
   test("HIP-3 stocks join the listed stock", () => {
-    expect(gloomListing("xyz:TSLA")).toEqual({ ticker: "TSLA", exchange: "SMART", assetCategory: "STK" });
-  });
-
-  test("crypto on a stock DEX stays crypto", () => {
-    expect(gloomListing("flx:BTC").assetCategory).toBe("CRYPTO");
-    expect(gloomListing("hyna:SOL").ticker).toBe("SOL-USD");
+    expect(gloomListing({ coin: "xyz:TSLA", assetClass: "equity" })).toEqual({ ticker: "TSLA", exchange: "SMART", assetCategory: "STK" });
   });
 
   test("commodities, indices, FX and rates never resolve to a same-named stock", () => {
-    for (const coin of ["xyz:GOLD", "xyz:XYZ100", "xyz:EUR", "km:10Y"]) {
-      expect(gloomListing(coin).ticker).toEndWith("-PERP");
-      expect(gloomListing(coin).assetCategory).toBe("CFD");
+    const rows = [
+      { coin: "xyz:GOLD", assetClass: "commodity" },
+      { coin: "xyz:XYZ100", assetClass: "index" },
+      { coin: "xyz:EUR", assetClass: "forex" },
+      { coin: "km:10Y", assetClass: "rate" },
+    ] as const;
+    for (const row of rows) {
+      expect(gloomListing(row).ticker).toEndWith("-PERP");
+      expect(gloomListing(row).assetCategory).toBe("CFD");
     }
   });
 });
@@ -68,7 +71,7 @@ describe("toSnapshot", () => {
 
   test("shorts keep positive shares with a short side", () => {
     const { positions } = toSnapshot({ masterAddress: ADDRESS }, portfolio, [
-      position({ coin: "xyz:NVDA", side: "short", size: "-4", entryPrice: "180", positionValueUsd: "700", unrealizedPnlUsd: "20" }),
+      position({ coin: "xyz:NVDA", assetClass: "equity", side: "short", size: "-4", entryPrice: "180", positionValueUsd: "700", unrealizedPnlUsd: "20" }),
     ]);
     expect(positions).toEqual([{
       ticker: "NVDA",
