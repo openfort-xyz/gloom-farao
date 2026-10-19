@@ -59,13 +59,19 @@ export function requireReadOnlyTools(tools: ListedTool[]): void {
   }
 }
 
-function openExternal(url: string): Promise<number> {
-  const command = process.platform === "darwin"
-    ? ["open", url]
-    : process.platform === "win32"
-      ? ["cmd", "/c", "start", "", url]
-      : ["xdg-open", url];
-  return Bun.spawn(command, { stdout: "ignore", stderr: "ignore" }).exited;
+/** Command that opens an http(s) URL in the browser. Windows skips cmd.exe, which would split the URL at `&` or `|`. */
+export function browserCommand(url: URL, platform: NodeJS.Platform = process.platform): string[] {
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new Error(`Gloomberb will not open a ${url.protocol} sign-in link.`);
+  }
+  const href = url.toString();
+  if (platform === "darwin") return ["open", href];
+  if (platform === "win32") return ["rundll32", "url.dll,FileProtocolHandler", href];
+  return ["xdg-open", href];
+}
+
+function openExternal(url: URL): Promise<number> {
+  return Bun.spawn(browserCommand(url), { stdout: "ignore", stderr: "ignore" }).exited;
 }
 
 class FaraoOAuthProvider implements OAuthClientProvider {
@@ -101,7 +107,7 @@ class FaraoOAuthProvider implements OAuthClientProvider {
 
   async redirectToAuthorization(url: URL) {
     url.searchParams.set("scope", READ_SCOPES);
-    const exitCode = await openExternal(url.toString());
+    const exitCode = await openExternal(url);
     if (exitCode !== 0) throw new Error(`Gloomberb could not open the browser. Open this page to sign in: ${url}`);
   }
 
