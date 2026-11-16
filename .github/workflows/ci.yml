@@ -12,7 +12,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     env:
-      GLOOMBERB_REF: v0.17.6
+      GLOOMBERB_REF: v0.20.17
     steps:
       - uses: actions/checkout@v7.0.1
         with:
